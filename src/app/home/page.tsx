@@ -3,7 +3,7 @@
 import React from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-export function Main() {
+export default function Home() {
   return (
     <div className="container mt-5">
       <div className="text-center mb-4">

@@ -1,9 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 export function Header() {
+  const router = useRouter();
+
   return (
     <header className="bg-light shadow-sm sticky-top">
       <div className="container-fluid">
@@ -25,19 +28,19 @@ export function Header() {
           <div className="collapse navbar-collapse" id="navbarNav">
             <ul className="navbar-nav ms-auto">
               <li className="nav-item">
-                <Link href="/home" className="nav-link">
-                  Sobre
-                </Link>
+                <button type="button" onClick={() => router.push('/home')}>
+                  Home
+                </button>
               </li>
               <li className="nav-item">
-                <Link href="/juego" className="nav-link">
-                  Blog
-                </Link>
+                <button type="button" onClick={() => router.push('/juego')}>
+                  Juego
+                </button>
               </li>
               <li className="nav-item">
-                <Link href="/acerca" className="nav-link">
-                  Contacte
-                </Link>
+                <button type="button" onClick={() => router.push('/acerca')}>
+                  Acerca
+                </button>
               </li>
             </ul>
           </div>

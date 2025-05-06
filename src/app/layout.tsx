@@ -1,16 +1,22 @@
 // app/layout.tsx
+import { Header } from './componentes/Header';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-import React from 'react';
-import { Header } from './componentes/Header'; // Ruta correcta al Header
-import { Main } from './componentes/Main'; // Ruta correcta al Main
-import 'bootstrap/dist/css/bootstrap.min.css'; // Estils globals de Bootstrap
+export const metadata = {
+  title: 'Proyecto Memory',
+  description: 'Juego de memoria con Next.js',
+};
 
-export default function RootLayout() {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="es">
       <body>
         <Header />
-        <Main />
+        <main>{children}</main>
       </body>
     </html>
   );
