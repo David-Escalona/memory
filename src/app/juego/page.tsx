@@ -1,10 +1,12 @@
 'use client';
 
-export default function JuegoPage() {
+import { TarjetaGrid } from '../componentes/tarjeta';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+export default function Juego() {
   return (
-    <div className="container mt-5">
-      <h2>Juego de Memoria</h2>
-      <p>Aquí irá el componente del juego de memoria.</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 to-purple-700">
+      <TarjetaGrid />
     </div>
   );
 }
