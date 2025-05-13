@@ -12,17 +12,20 @@ interface PokemonCardData {
 interface CardState extends PokemonCardData {
   isFlipped: boolean;
   uniqueId: number;
+  clicks: number; // contador individual
 }
 
 export default function MemoryGame() {
   const [cards, setCards] = useState<CardState[]>([]);
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
   const [disableAll, setDisableAll] = useState(false);
+  const [totalClicks, setTotalClicks] = useState(0); // contador global
 
   useEffect(() => {
     async function fetchData() {
       const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=8');
       const data = await res.json();
+
       const results = await Promise.all(
         data.results.map(async (pokemon: { url: string }) => {
           const resDetail = await fetch(pokemon.url);
@@ -38,7 +41,8 @@ export default function MemoryGame() {
       const duplicated = [...results, ...results].map((card, index) => ({
         ...card,
         isFlipped: false,
-        uniqueId: index + 1, // unique ID for each card instance
+        uniqueId: index + 1,
+        clicks: 0, // inicializa contador individual
       }));
 
       const shuffled = duplicated.sort(() => Math.random() - 0.5);
@@ -53,6 +57,9 @@ export default function MemoryGame() {
 
     const newCards = [...cards];
     newCards[cardIndex].isFlipped = true;
+    newCards[cardIndex].clicks += 1; // incrementar individual
+    setTotalClicks(prev => prev + 1); // incrementar global
+
     const newFlipped = [...flippedCards, cardIndex];
 
     setCards(newCards);
@@ -63,18 +70,18 @@ export default function MemoryGame() {
       const [firstIdx, secondIdx] = newFlipped;
 
       if (newCards[firstIdx].id === newCards[secondIdx].id) {
-        // Match
         newCards[firstIdx].matched = true;
         newCards[secondIdx].matched = true;
-        setCards(newCards);
-        setFlippedCards([]);
-        setDisableAll(false);
+        setTimeout(() => {
+          setCards([...newCards]);
+          setFlippedCards([]);
+          setDisableAll(false);
+        }, 500);
       } else {
-        // No match, flip back after delay
         setTimeout(() => {
           newCards[firstIdx].isFlipped = false;
           newCards[secondIdx].isFlipped = false;
-          setCards(newCards);
+          setCards([...newCards]);
           setFlippedCards([]);
           setDisableAll(false);
         }, 1000);
@@ -84,32 +91,50 @@ export default function MemoryGame() {
 
   return (
     <div
-      className="min-vh-100 d-flex flex-wrap justify-content-center align-items-start p-4"
+      className="min-vh-100 d-flex flex-column align-items-center justify-content-start p-4"
       style={{ backgroundColor: '#ffffff' }}
     >
-      {cards.map((card, index) => (
-        <div
-          key={card.uniqueId}
-          className="card m-2"
-          style={{ width: '8rem', height: '8rem', cursor: 'pointer' }}
-          onClick={() => handleClick(index)}
-        >
-          {card.isFlipped || card.matched ? (
-            <img
-              src={card.image}
-              alt={`Pokemon ${card.id}`}
-              className="card-img-top p-2 bg-light"
-              style={{ objectFit: 'contain', height: '100%' }}
-            />
-          ) : (
-            <div
-              className="bg-secondary w-100 h-100 d-flex align-items-center justify-content-center"
-            >
-              <span className="text-white">?</span>
-            </div>
-          )}
-        </div>
-      ))}
+      {/* Global click counter */}
+      <div className="mb-4 text-center">
+        <h5 className="fw-bold text-primary">Total Clicks: {totalClicks}</h5>
+      </div>
+
+      <div className="d-flex flex-wrap justify-content-center" style={{ maxWidth: '1200px' }}>
+        {cards.map((card, index) => (
+          <div
+            key={card.uniqueId}
+            className="card m-2 text-center shadow"
+            style={{
+              width: '8rem',
+              height: '9.5rem',
+              cursor: 'pointer',
+              border: card.matched ? '2px solid limegreen' : '1px solid #ccc',
+              backgroundColor: card.matched ? '#e6ffe6' : 'white',
+            }}
+            onClick={() => handleClick(index)}
+          >
+            {card.isFlipped || card.matched ? (
+              <>
+                <img
+                  src={card.image}
+                  alt={`Pokemon ${card.id}`}
+                  className="card-img-top p-2 bg-light"
+                  style={{ objectFit: 'contain', height: '6rem' }}
+                />
+                <div className="card-footer p-1">
+                  <small className="text-muted">Clicks: {card.clicks}</small>
+                </div>
+              </>
+            ) : (
+              <div
+                className="bg-secondary w-100 h-100 d-flex align-items-center justify-content-center rounded"
+              >
+                <span className="text-white display-6">?</span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
