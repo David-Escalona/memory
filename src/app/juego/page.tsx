@@ -1,12 +1,7 @@
 'use client';
 
-import { TarjetaGrid } from '../componentes/tarjeta';
-import { ClicsProvider } from '../componentes/clic';
+import App from '../componentes/tarjeta';
 
-export default function Juego() {
-  return (
-    <ClicsProvider>
-      <TarjetaGrid />
-    </ClicsProvider>
-  );
+export default function Page() {
+  return <App />;
 }

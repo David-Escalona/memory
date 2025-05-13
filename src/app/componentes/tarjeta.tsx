@@ -1,22 +1,77 @@
 'use client';
-
 import { useEffect, useState } from 'react';
-import { useClics } from './clic';
+import { ClicsProvider, useClics } from './ClickContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 interface PokemonData {
   imagen: string;
 }
 
-export function TarjetaGrid() {
+function PokemonCard({ imagen, index }: { imagen: string; index: number }) {
+  const { incrementarClicks } = useClics();
+  const [individualClicks, setIndividualClicks] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+
+  const handleClick = () => {
+    setFlipped(true); // mostrar imagen
+    setIndividualClicks(prev => prev + 1);
+    incrementarClicks();
+
+    // ocultar después de 1 segundo
+    setTimeout(() => {
+      setFlipped(false);
+    }, 1000);
+  };
+
+  return (
+    <div
+      className="card text-center"
+      style={{ width: '8rem', cursor: 'pointer' }}
+      onClick={handleClick}
+    >
+      {flipped ? (
+        <img
+          src={imagen}
+          className="card-img-top p-2 bg-light"
+          alt={`Pokemon ${index}`}
+          style={{ height: '96px', objectFit: 'contain' }}
+        />
+      ) : (
+        <div
+          className="bg-secondary"
+          style={{
+            height: '96px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <small className="text-white">Cap per avall</small>
+        </div>
+      )}
+      <div className="card-footer">
+        <small className="text-muted">Clics: {individualClicks}</small>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ClicsProvider>
+      <TarjetaGrid />
+    </ClicsProvider>
+  );
+}
+
+function TarjetaGrid() {
   const [pokemones, setPokemones] = useState<PokemonData[]>([]);
-  const [clicks, setClicks] = useState<number[]>([]);
-  const { totalClics, incrementar } = useClics();
+  const { totalClicks } = useClics();
 
   useEffect(() => {
     async function fetchPokemones() {
       try {
-        const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=10');
+        const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=20');
         const data = await res.json();
 
         const detalles = await Promise.all(
@@ -30,7 +85,6 @@ export function TarjetaGrid() {
         );
 
         setPokemones(detalles);
-        setClicks(new Array(detalles.length).fill(0));
       } catch (err) {
         console.error('Error al obtener los pokémon:', err);
       }
@@ -39,41 +93,24 @@ export function TarjetaGrid() {
     fetchPokemones();
   }, []);
 
-  const handleCardClick = (index: number) => {
-    const nuevosClicks = [...clicks];
-    nuevosClicks[index] += 1;
-    setClicks(nuevosClicks);
-    incrementar(); // actualiza el contador global
-  };
-
   return (
     <div
-      className="min-vh-100 d-flex flex-column justify-content-center align-items-center bg-gradient p-4 position-relative"
-      style={{ background: 'linear-gradient(to bottom right, #4f46e5, #9333ea)' }}
+      className="min-vh-100 position-relative d-flex align-items-center justify-content-center p-4"
+      style={{ backgroundColor: '#fff' }}
     >
-      <div className="card-group gap-3 flex-wrap d-flex justify-content-center">
-        {pokemones.map((pokemon, index) => (
-          <div
-            key={index}
-            className="card m-2"
-            style={{ width: '8rem', cursor: 'pointer' }}
-            onClick={() => handleCardClick(index)}
-          >
-            <img
-              src={pokemon.imagen}
-              className="card-img-top p-2 bg-light"
-              alt={`Pokemon ${index}`}
-            />
-            <div className="card-footer text-center">
-              <small className="text-muted">Clics: {clicks[index]}</small>
-            </div>
-          </div>
-        ))}
+      {/* Contador Global */}
+      <div
+        className="position-absolute bottom-0 start-0 bg-dark text-white p-2 m-3 rounded shadow"
+        style={{ fontSize: '14px' }}
+      >
+        Total clics: {totalClicks}
       </div>
 
-      {/* Contador global en la esquina inferior izquierda */}
-      <div className="position-absolute bottom-0 start-0 text-white m-3">
-        <strong>Total de clics: {totalClics}</strong>
+      {/* Tarjetas */}
+      <div className="d-flex flex-wrap justify-content-center gap-3" style={{ maxWidth: '1200px' }}>
+        {pokemones.map((pokemon, index) => (
+          <PokemonCard key={index} imagen={pokemon.imagen} index={index} />
+        ))}
       </div>
     </div>
   );
