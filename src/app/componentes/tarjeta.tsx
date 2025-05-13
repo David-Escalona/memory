@@ -1,45 +1,49 @@
 'use client';
 
-interface TarjetaProps {
+import { useEffect, useState } from 'react';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+interface PokemonData {
   imagen: string;
 }
 
-export function Tarjeta({ imagen }: TarjetaProps) {
-  return (
-    <div className="bg-white shadow-lg rounded-3xl p-4 w-40 h-40 flex items-center justify-center transition-transform transform hover:scale-110 hover:shadow-xl duration-300">
-      <img src={imagen} alt="Pokemon" className="w-28 h-28 object-contain rounded-lg shadow-md border-4 border-indigo-400 hover:border-yellow-400 transition-all duration-300" />
-    </div>
-  );
-}
+export function TarjetaGrid() {
+  const [pokemones, setPokemones] = useState<PokemonData[]>([]);
 
-interface GrupoTarjetasProps {
-  tarjetas: string[];
-}
+  useEffect(() => {
+    async function fetchPokemones() {
+      try {
+        const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=10');
+        const data = await res.json();
 
-export function GrupoTarjetas({ tarjetas }: GrupoTarjetasProps) {
+        const detalles = await Promise.all(
+          data.results.map(async (pokemon: { url: string }) => {
+            const resDetalle = await fetch(pokemon.url);
+            const dataDetalle = await resDetalle.json();
+            return {
+              imagen: dataDetalle.sprites.front_default,
+            };
+          })
+        );
+
+        setPokemones(detalles);
+      } catch (err) {
+        console.error('Error al obtener los pokémon:', err);
+      }
+    }
+
+    fetchPokemones();
+  }, []);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 to-purple-700 p-4">
-      <div className="grid grid-cols-3 gap-6 justify-center items-center w-full max-w-4xl">
-        {tarjetas.map((imagen, index) => (
-          <Tarjeta key={index} imagen={imagen} />
+    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-gradient p-4" style={{ background: 'linear-gradient(to bottom right, #4f46e5, #9333ea)' }}>
+      <div className="card-group gap-3 flex-wrap d-flex justify-content-center">
+        {pokemones.map((pokemon, index) => (
+          <div key={index} className="card" style={{ width: '8rem' }}>
+            <img src={pokemon.imagen} className="card-img-top p-2 bg-light" alt={`Pokemon ${index}`} />
+          </div>
         ))}
       </div>
     </div>
   );
-}
-
-export function TarjetaGrid() {
-
-  const tarjetas: string[] = [
-    'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png', 
-    'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png', 
-    'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png',  
-    'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png',  
-    'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10.png', 
-    'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/13.png',
-    'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png', 
-    'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png',  
-  ];
-
-  return <GrupoTarjetas tarjetas={tarjetas} />;
 }
