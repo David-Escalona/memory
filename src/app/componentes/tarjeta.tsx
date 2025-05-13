@@ -12,15 +12,26 @@ interface PokemonCardData {
 interface CardState extends PokemonCardData {
   isFlipped: boolean;
   uniqueId: number;
-  clicks: number; // contador individual
+  clicks: number;
 }
 
 export default function MemoryGame() {
   const [cards, setCards] = useState<CardState[]>([]);
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
   const [disableAll, setDisableAll] = useState(false);
-  const [totalClicks, setTotalClicks] = useState(0); // contador global
+  const [totalClicks, setTotalClicks] = useState(0);
+  const [score, setScore] = useState(0);
+  const [seconds, setSeconds] = useState(0);
 
+  // ⏱️ Temporizador
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSeconds(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // ⬇️ Carga inicial de cartas
   useEffect(() => {
     async function fetchData() {
       const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=8');
@@ -42,7 +53,7 @@ export default function MemoryGame() {
         ...card,
         isFlipped: false,
         uniqueId: index + 1,
-        clicks: 0, // inicializa contador individual
+        clicks: 0,
       }));
 
       const shuffled = duplicated.sort(() => Math.random() - 0.5);
@@ -57,8 +68,8 @@ export default function MemoryGame() {
 
     const newCards = [...cards];
     newCards[cardIndex].isFlipped = true;
-    newCards[cardIndex].clicks += 1; // incrementar individual
-    setTotalClicks(prev => prev + 1); // incrementar global
+    newCards[cardIndex].clicks += 1;
+    setTotalClicks(prev => prev + 1);
 
     const newFlipped = [...flippedCards, cardIndex];
 
@@ -72,6 +83,7 @@ export default function MemoryGame() {
       if (newCards[firstIdx].id === newCards[secondIdx].id) {
         newCards[firstIdx].matched = true;
         newCards[secondIdx].matched = true;
+        setScore(prev => prev + 10); // ✅ Suma puntos
         setTimeout(() => {
           setCards([...newCards]);
           setFlippedCards([]);
@@ -89,16 +101,28 @@ export default function MemoryGame() {
     }
   };
 
+  // 🧮 Formatea el tiempo (mm:ss)
+  const formatTime = (totalSeconds: number) => {
+    const min = Math.floor(totalSeconds / 60)
+      .toString()
+      .padStart(2, '0');
+    const sec = (totalSeconds % 60).toString().padStart(2, '0');
+    return `${min}:${sec}`;
+  };
+
   return (
     <div
       className="min-vh-100 d-flex flex-column align-items-center justify-content-start p-4"
       style={{ backgroundColor: '#ffffff' }}
     >
-      {/* Global click counter */}
+      {/* Header con contador global, tiempo y puntuación */}
       <div className="mb-4 text-center">
         <h5 className="fw-bold text-primary">Total Clicks: {totalClicks}</h5>
+        <h6 className="text-secondary">⏱ Temps: {formatTime(seconds)}</h6>
+        <h6 className="text-success">🎯 Puntuació: {score}</h6>
       </div>
 
+      {/* Grid de cartas */}
       <div className="d-flex flex-wrap justify-content-center" style={{ maxWidth: '1200px' }}>
         {cards.map((card, index) => (
           <div
@@ -126,9 +150,7 @@ export default function MemoryGame() {
                 </div>
               </>
             ) : (
-              <div
-                className="bg-secondary w-100 h-100 d-flex align-items-center justify-content-center rounded"
-              >
+              <div className="bg-secondary w-100 h-100 d-flex align-items-center justify-content-center rounded">
                 <span className="text-white display-6">?</span>
               </div>
             )}
