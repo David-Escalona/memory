@@ -1,12 +1,12 @@
 'use client';
 
 import { TarjetaGrid } from '../componentes/tarjeta';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { ClicsProvider } from '../componentes/clic';
 
 export default function Juego() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 to-purple-700">
+    <ClicsProvider>
       <TarjetaGrid />
-    </div>
+    </ClicsProvider>
   );
 }
