@@ -1,50 +1,71 @@
 'use client';
 
 import { useState } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { useRouter } from 'next/navigation';
 
-export default function Login() {
-  const [email, setEmail] = useState('');
+export default function LoginPage() {
+  const router = useRouter();
+
+  const getUsers = () => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('users');
+      return stored ? JSON.parse(stored) : [];
+    }
+    return [];
+  };
+
+  const [users] = useState(getUsers());
+  const [userOrEmail, setUserOrEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [message, setMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login amb:', { email, password });
-    // Aquí podries afegir la lògica d'autenticació
+
+    const user = users.find(
+      (u: any) =>
+        (u.email === userOrEmail || u.username === userOrEmail) &&
+        u.password === password
+    );
+
+    if (user) {
+      localStorage.setItem('loggedInUser', JSON.stringify(user));
+      setMessage('Login correcto, redirigiendo...');
+      setTimeout(() => router.push('/home'), 1000);
+    } else {
+      setMessage('Usuario/Email o contraseña incorrectos');
+    }
   };
 
   return (
-    <div className="min-vh-100 d-flex justify-content-center align-items-center bg-light">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-4 rounded shadow"
-        style={{ minWidth: '300px' }}
-      >
-        <h4 className="mb-3 text-center">Iniciar Sessió</h4>
+    <div className="container mt-5" style={{ maxWidth: '400px' }}>
+      <h2 className="mb-4">Login</h2>
+      <form onSubmit={handleLogin}>
         <div className="mb-3">
-          <label className="form-label">Correu electrònic</label>
+          <label>Usuario o Email</label>
           <input
-            type="email"
+            type="text"
             className="form-control"
-            required
-            value={email}
-            onChange={e => setEmail(e.target.value)}
+            value={userOrEmail}
+            onChange={e => setUserOrEmail(e.target.value)}
+            placeholder="Usuario o email"
           />
         </div>
         <div className="mb-3">
-          <label className="form-label">Contrasenya</label>
+          <label>Contraseña</label>
           <input
             type="password"
             className="form-control"
-            required
             value={password}
             onChange={e => setPassword(e.target.value)}
+            placeholder="Contraseña"
           />
         </div>
-        <button type="submit" className="btn btn-primary w-100">
-          Entrar
+        <button className="btn btn-primary w-100" type="submit">
+          Iniciar sesión
         </button>
       </form>
+      {message && <div className="mt-3 alert alert-warning">{message}</div>}
     </div>
   );
 }
