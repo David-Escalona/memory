@@ -31,38 +31,43 @@ export default function MemoryGame() {
     return () => clearInterval(timer);
   }, []);
 
-  // ⬇️ Carga inicial de cartas
+  // ⬇️ Carga inicial de cartas (Promise.all = càrrega paral·lela)
   useEffect(() => {
     async function fetchData() {
-      const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=8');
-      const data = await res.json();
+      try {
+        const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=8');
+        const data = await res.json();
 
-      const results = await Promise.all(
-        data.results.map(async (pokemon: { url: string }) => {
-          const resDetail = await fetch(pokemon.url);
-          const dataDetail = await resDetail.json();
-          return {
-            id: dataDetail.id,
-            image: dataDetail.sprites.front_default,
-            matched: false,
-          };
-        })
-      );
+        const results = await Promise.all(
+          data.results.map(async (pokemon: { url: string }) => {
+            const resDetail = await fetch(pokemon.url);
+            const dataDetail = await resDetail.json();
+            return {
+              id: dataDetail.id,
+              image: dataDetail.sprites.front_default,
+              matched: false,
+            };
+          })
+        );
 
-      const duplicated = [...results, ...results].map((card, index) => ({
-        ...card,
-        isFlipped: false,
-        uniqueId: index + 1,
-        clicks: 0,
-      }));
+        const duplicated = [...results, ...results].map((card, index) => ({
+          ...card,
+          isFlipped: false,
+          uniqueId: index + 1,
+          clicks: 0,
+        }));
 
-      const shuffled = duplicated.sort(() => Math.random() - 0.5);
-      setCards(shuffled);
+        const shuffled = duplicated.sort(() => Math.random() - 0.5);
+        setCards(shuffled);
+      } catch (err) {
+        console.error('Error carregant pokémons:', err);
+      }
     }
 
     fetchData();
   }, []);
 
+  // 🔁 Gestor del clic a cada targeta
   const handleClick = (cardIndex: number) => {
     if (disableAll || cards[cardIndex].isFlipped || cards[cardIndex].matched) return;
 
@@ -83,7 +88,7 @@ export default function MemoryGame() {
       if (newCards[firstIdx].id === newCards[secondIdx].id) {
         newCards[firstIdx].matched = true;
         newCards[secondIdx].matched = true;
-        setScore(prev => prev + 10); // ✅ Suma puntos
+        setScore(prev => prev + 10); // 🎯 Sumar puntuació
         setTimeout(() => {
           setCards([...newCards]);
           setFlippedCards([]);
@@ -115,14 +120,14 @@ export default function MemoryGame() {
       className="min-vh-100 d-flex flex-column align-items-center justify-content-start p-4"
       style={{ backgroundColor: '#ffffff' }}
     >
-      {/* Header con contador global, tiempo y puntuación */}
+      {/* ⏱️🏆 Encabezado */}
       <div className="mb-4 text-center">
-        <h5 className="fw-bold text-primary">Total Clicks: {totalClicks}</h5>
+        <h5 className="fw-bold text-primary">🖱 Total Clicks: {totalClicks}</h5>
         <h6 className="text-secondary">⏱ Temps: {formatTime(seconds)}</h6>
         <h6 className="text-success">🎯 Puntuació: {score}</h6>
       </div>
 
-      {/* Grid de cartas */}
+      {/* 🧩 Grid de targetes */}
       <div className="d-flex flex-wrap justify-content-center" style={{ maxWidth: '1200px' }}>
         {cards.map((card, index) => (
           <div
