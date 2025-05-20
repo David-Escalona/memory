@@ -1,9 +1,7 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
-  return(
-    <div>
-      <h1>Hola NEXT</h1>
-    </div>
-  );
+import { redirect } from 'next/navigation';
+
+export default function RootRedirect() {
+  redirect('/home');
 }
