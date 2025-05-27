@@ -1,17 +1,56 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 export function Header() {
   const router = useRouter();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [hovering, setHovering] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const user = localStorage.getItem('user');
+      if (user) {
+        try {
+          const parsedUser = JSON.parse(user);
+          setUserEmail(parsedUser.email);
+        } catch (e) {
+          console.error('Error parsing user:', e);
+        }
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUserEmail(null);
+    router.push('/');
+  };
 
   return (
-    <header className="bg-white shadow-sm sticky-top border-bottom">
-      <div className="container-fluid px-4 py-2">
-        <nav className="navbar navbar-expand-lg navbar-light">
-          <Link href="/" className="navbar-brand fw-bold text-primary fs-4">
+    <header
+      className="sticky-top border-bottom shadow-sm"
+      style={{
+        backgroundImage:
+          "url('https://png.pngtree.com/thumb_back/fh260/background/20210630/pngtree-red-yellow-orange-background-photos-and-premium-high-res-victors-image_733773.jpg')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        fontFamily: "'Comfortaa', cursive",
+      }}
+    >
+      <div
+        className="container-fluid px-4 py-2"
+        style={{
+          backgroundColor: 'rgba(231, 9, 9, 0.49)',
+        }}
+      >
+        <nav className="navbar navbar-expand-lg navbar-dark">
+          <Link href="/" className="navbar-brand fw-bold fs-4">
             David Escalona García
           </Link>
           <button
@@ -29,50 +68,59 @@ export function Header() {
           <div className="collapse navbar-collapse justify-content-end" id="navbarNav">
             <ul className="navbar-nav gap-2">
               <li className="nav-item">
-                <button
-                  type="button"
-                  className="btn btn-outline-primary"
-                  onClick={() => router.push('/home')}
-                >
+                <Link href="/home" className="btn btn-outline-light">
                   🏠 Home
-                </button>
+                </Link>
               </li>
               <li className="nav-item">
-                <button
-                  type="button"
-                  className="btn btn-outline-success"
-                  onClick={() => router.push('/juego')}
-                >
+                <Link href="/juego" className="btn btn-outline-light">
                   🎮 Juego
-                </button>
+                </Link>
               </li>
               <li className="nav-item">
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={() => router.push('/acerca')}
-                >
+                <Link href="/acerca" className="btn btn-outline-light">
                   ℹ️ Acerca
-                </button>
+                </Link>
               </li>
-              <li className="nav-item">
-                <button
-                  type="button"
-                  className="btn btn-outline-dark"
-                  onClick={() => router.push('/login')}
+
+              {userEmail ? (
+                <li
+                  className="nav-item position-relative"
+                  onMouseEnter={() => setHovering(true)}
+                  onMouseLeave={() => setHovering(false)}
+                  style={{ cursor: 'pointer' }}
                 >
-                  🔑 Login
-                </button>
-              </li>
-              <li className="nav-item">
-                <button
-                  type="button"
-                  className="btn btn-outline-warning"
-                  onClick={() => router.push('/registre')}
-                >
-                  📝 Registro
-                </button>
-              </li>
+                  <span className="btn btn-light text-dark fw-semibold">
+                    {userEmail}
+                  </span>
+                  {hovering && (
+                    <div
+                      className="position-absolute mt-2 bg-white border rounded shadow-sm"
+                      style={{ top: '100%', right: 0, zIndex: 1000 }}
+                    >
+                      <button
+                        className="dropdown-item text-danger fw-bold"
+                        onClick={handleLogout}
+                      >
+                        🚪 Cerrar sesión
+                      </button>
+                    </div>
+                  )}
+                </li>
+              ) : (
+                <>
+                  <li className="nav-item">
+                    <Link href="/login" className="btn btn-outline-light">
+                      🔑 Login
+                    </Link>
+                  </li>
+                  <li className="nav-item">
+                    <Link href="/registre" className="btn btn-outline-light">
+                      📝 Registro
+                    </Link>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
         </nav>

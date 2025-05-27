@@ -1,102 +1,137 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-export default function RegistroPage() {
-  const router = useRouter();
+export default function Registro() {
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [mensaje, setMensaje] = useState("");
+  const [tipoMensaje, setTipoMensaje] = useState<"error" | "success" | "">("");
 
-  const getUsers = () => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('users');
-      return stored ? JSON.parse(stored) : [];
-    }
-    return [];
-  };
-
-  const [users, setUsers] = useState(getUsers());
-  const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
-
-  const validateEmail = (email: string) => {
-    return /\S+@\S+\.\S+/.test(email);
-  };
-
-  const handleRegister = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const password_confirmation = password;
+    const role = "user";
 
-    if (!email || !username || !password) {
-      setMessage('Completa todos los campos');
+    if (!nombre || !email || !password) {
+      setMensaje("Por favor, completa todos los campos.");
+      setTipoMensaje("error");
       return;
     }
 
-    if (!validateEmail(email)) {
-      setMessage('Introduce un email válido');
-      return;
+    async function registerUser() {
+      try {
+        const url = "https://soothing-magic-production.up.railway.app/api/register";
+        const respuesta = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: nombre,
+            email,
+            role,
+            password,
+            password_confirmation,
+          }),
+        });
+
+        const respuestaJson = await respuesta.json();
+
+        if (!respuesta.ok) {
+          const error = respuestaJson?.message || "Error al registrar el usuario.";
+          setMensaje(`❌ ${error}`);
+          setTipoMensaje("error");
+          return;
+        }
+
+        setMensaje("✅ Usuario registrado correctamente. Redirigiendo al login...");
+        setTipoMensaje("success");
+
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+
+      } catch (error) {
+        setMensaje("❌ Error de conexión con el servidor.");
+        setTipoMensaje("error");
+      }
     }
 
-    if (users.find((u: any) => u.email === email)) {
-      setMessage('El email ya está registrado');
-      return;
-    }
-
-    if (users.find((u: any) => u.username === username)) {
-      setMessage('El usuario ya existe');
-      return;
-    }
-
-    const newUsers = [...users, { email, username, password }];
-    setUsers(newUsers);
-    localStorage.setItem('users', JSON.stringify(newUsers));
-    setMessage('Registro exitoso! Redirigiendo a login...');
-    setEmail('');
-    setUsername('');
-    setPassword('');
-
-    setTimeout(() => router.push('/login'), 1500);
+    registerUser();
   };
 
   return (
-    <div className="container mt-5" style={{ maxWidth: '400px' }}>
-      <h2 className="mb-4">Registro</h2>
-      <form onSubmit={handleRegister}>
-        <div className="mb-3">
-          <label>Email</label>
-          <input
-            type="email"
-            className="form-control"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="ejemplo@correo.com"
-          />
-        </div>
-        <div className="mb-3">
-          <label>Usuario</label>
-          <input
-            type="text"
-            className="form-control"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-            placeholder="Nombre de usuario"
-          />
-        </div>
-        <div className="mb-3">
-          <label>Contraseña</label>
-          <input
-            type="password"
-            className="form-control"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="Contraseña"
-          />
-        </div>
-        <button className="btn btn-primary w-100" type="submit">
-          Registrar
-        </button>
-      </form>
-      {message && <div className="mt-3 alert alert-info">{message}</div>}
+    <div
+      className="min-vh-100 d-flex justify-content-center align-items-center px-3"
+      style={{
+        backgroundImage:
+          "url('https://img.freepik.com/foto-gratis/paisaje-natural-cielo-despejado-estrellado_23-2151683193.jpg?semt=ais_hybrid&w=740')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        backgroundRepeat: 'no-repeat',
+        fontFamily: "'Comfortaa', cursive",
+      }}
+    >
+      <div
+        className="bg-white p-4 rounded-4 shadow w-100"
+        style={{
+          maxWidth: 420,
+          backdropFilter: "blur(2px)",
+          backgroundColor: "rgba(255, 255, 255, 0.85)",
+        }}
+      >
+        <h2 className="text-center mb-4 text-primary">Registro</h2>
+
+        {mensaje && (
+          <div className={`alert ${tipoMensaje === "error" ? "alert-danger" : "alert-success"}`}>
+            {mensaje}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="mb-3">
+            <label htmlFor="nombre" className="form-label">Nombre</label>
+            <input
+              type="text"
+              className="form-control"
+              id="nombre"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-3">
+            <label htmlFor="email" className="form-label">Correo electrónico</label>
+            <input
+              type="email"
+              className="form-control"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="password" className="form-label">Contraseña</label>
+            <input
+              type="password"
+              className="form-control"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primary w-100 fw-bold"
+          >
+            Registrar
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
