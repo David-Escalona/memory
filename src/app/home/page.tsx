@@ -93,12 +93,6 @@ export default function Home() {
           Proyecto MEMORY
         </h1>
 
-        {userName && (
-          <p className="mb-3 fs-4 fw-semibold" style={{ color: '#E0FFC1' }}>
-            Bienvenido, {userName}
-          </p>
-        )}
-
         <p className="mb-5 fs-5" style={{ maxWidth: '600px', lineHeight: '1.6', color: '#EEE' }}>
           Esto es un juego de cartas en el que los jugadores intentan encontrar pares de cartas
           iguales dándoles la vuelta. El juego requiere memoria y estrategia, ya que los jugadores

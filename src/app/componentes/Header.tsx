@@ -115,10 +115,10 @@ export function Header() {
                       style={{ top: '100%', right: 0, zIndex: 1000 }}
                     >
                       <button
-                        className="dropdown-item text-danger fw-bold"
+                        className="dropdown-item text-danger fw-bold p-2"
                         onClick={handleLogout}
                       >
-                        🚪 Cerrar sesión
+                        ❌ Cerrar sesión
                       </button>
                     </div>
                   )}
