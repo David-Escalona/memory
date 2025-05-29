@@ -85,7 +85,7 @@ export default function Home() {
             fontSize: '3.5rem',
             color: '#A7FF00',
             textShadow:
-              '0 0 8px #A7FF00, 0 0 16px #85D700, 0 0 24px #6CBD00, 0 0 32px #9CFF00, 0 0 48px #C7FF5A',
+              '0 0 1px #A7FF00, 0 0 16px #85D700, 0 0 24px #6CBD00, 0 0 32px rgb(0, 0, 0), 0 0 48px rgb(245, 245, 245)',
             letterSpacing: '0.15em',
             fontFamily: "'Orbitron', sans-serif",
           }}

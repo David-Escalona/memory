@@ -1,34 +1,58 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useRef } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 export function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [hovering, setHovering] = useState(false);
+  const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const checkUser = () => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      try {
+        const parsedUser = JSON.parse(user);
+        if (parsedUser?.email) {
+          setUserEmail(parsedUser.email);
+        } else {
+          setUserEmail(null);
+        }
+      } catch (e) {
+        console.error('Error parsing user:', e);
+        setUserEmail(null);
+      }
+    } else {
+      setUserEmail(null);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const user = localStorage.getItem('user');
-      if (user) {
-        try {
-          const parsedUser = JSON.parse(user);
-          setUserEmail(parsedUser.email);
-        } catch (e) {
-          console.error('Error parsing user:', e);
-        }
-      }
+      checkUser();
     }
-  }, []);
+  }, [pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUserEmail(null);
     router.push('/');
+  };
+
+  const handleMouseEnter = () => {
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    setHovering(true);
+  };
+
+  const handleMouseLeave = () => {
+    hoverTimeout.current = setTimeout(() => {
+      setHovering(false);
+    }, 300); // Espera 300ms antes de ocultar el dropdown
   };
 
   return (
@@ -45,9 +69,7 @@ export function Header() {
     >
       <div
         className="container-fluid px-4 py-2"
-        style={{
-          backgroundColor: 'rgba(231, 9, 9, 0.49)',
-        }}
+        style={{ backgroundColor: 'rgba(231, 9, 9, 0.49)' }}
       >
         <nav className="navbar navbar-expand-lg navbar-dark">
           <Link href="/" className="navbar-brand fw-bold fs-4">
@@ -68,30 +90,24 @@ export function Header() {
           <div className="collapse navbar-collapse justify-content-end" id="navbarNav">
             <ul className="navbar-nav gap-2">
               <li className="nav-item">
-                <Link href="/home" className="btn btn-outline-light">
-                  🏠 Home
-                </Link>
+                <Link href="/home" className="btn btn-outline-light">🏠 Home</Link>
               </li>
               <li className="nav-item">
-                <Link href="/juego" className="btn btn-outline-light">
-                  🎮 Juego
-                </Link>
+                <Link href="/juego" className="btn btn-outline-light">🎮 Juego</Link>
               </li>
               <li className="nav-item">
-                <Link href="/acerca" className="btn btn-outline-light">
-                  ℹ️ Acerca
-                </Link>
+                <Link href="/acerca" className="btn btn-outline-light">ℹ️ Acerca</Link>
               </li>
 
               {userEmail ? (
                 <li
                   className="nav-item position-relative"
-                  onMouseEnter={() => setHovering(true)}
-                  onMouseLeave={() => setHovering(false)}
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
                   style={{ cursor: 'pointer' }}
                 >
-                  <span className="btn btn-light text-dark fw-semibold">
-                    {userEmail}
+                  <span className="btn btn-light text-dark fw-semibold d-flex align-items-center gap-2">
+                    👤 {userEmail}
                   </span>
                   {hovering && (
                     <div
@@ -110,14 +126,10 @@ export function Header() {
               ) : (
                 <>
                   <li className="nav-item">
-                    <Link href="/login" className="btn btn-outline-light">
-                      🔑 Login
-                    </Link>
+                    <Link href="/login" className="btn btn-outline-light">🔑 Login</Link>
                   </li>
                   <li className="nav-item">
-                    <Link href="/registre" className="btn btn-outline-light">
-                      📝 Registro
-                    </Link>
+                    <Link href="/registre" className="btn btn-outline-light">📝 Registro</Link>
                   </li>
                 </>
               )}

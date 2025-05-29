@@ -30,6 +30,7 @@ export default function LoginPage() {
       });
 
       const data = await response.json();
+      console.log('DATA DEL LOGIN:', data);
 
       if (!response.ok) {
         setMensaje(data.message || '❌ Credenciales incorrectas.');
@@ -37,16 +38,21 @@ export default function LoginPage() {
         return;
       }
 
-      // Guardar token y usuario en localStorage
       if (data.token) {
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user || {}));
+
+        // ✅ Guardamos el usuario correctamente, incluso si el backend no lo manda bien
+        const user = data.user && data.user.email
+          ? data.user
+          : { email }; // Usa el email ingresado si no se recibe uno válido
+
+        localStorage.setItem('user', JSON.stringify(user));
 
         setMensaje('✅ Inicio de sesión exitoso. Redirigiendo...');
         setTipoMensaje('success');
 
         setTimeout(() => {
-          router.push('/home');
+          router.push('/home'); // o '/homesesion' si tienes esa ruta
         }, 2000);
       } else {
         setMensaje('No se recibió token del servidor.');
