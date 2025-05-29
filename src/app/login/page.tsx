@@ -41,10 +41,13 @@ export default function LoginPage() {
       if (data.token) {
         localStorage.setItem('token', data.token);
 
-        // ✅ Guardamos el usuario correctamente, incluso si el backend no lo manda bien
-        const user = data.user && data.user.email
-          ? data.user
-          : { email }; // Usa el email ingresado si no se recibe uno válido
+        // Intentamos detectar el usuario en distintas rutas posibles
+        const userData = data.user || data.data?.user || {};
+
+        const user = {
+          name: userData.name || 'Usuario',
+          email: userData.email || email,
+        };
 
         localStorage.setItem('user', JSON.stringify(user));
 
@@ -52,7 +55,7 @@ export default function LoginPage() {
         setTipoMensaje('success');
 
         setTimeout(() => {
-          router.push('/home'); // o '/homesesion' si tienes esa ruta
+          router.push('/home');
         }, 2000);
       } else {
         setMensaje('No se recibió token del servidor.');

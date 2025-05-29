@@ -29,7 +29,7 @@ export default function Home() {
       router.push('/login');
       return;
     }
-    router.push('/partidas');
+    router.push('/mispartidas');
   };
 
   return (

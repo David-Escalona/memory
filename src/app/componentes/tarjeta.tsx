@@ -16,6 +16,14 @@ interface CardState extends PokemonCardData {
   clicks: number;
 }
 
+interface GameResult {
+  name: string;
+  email: string;
+  time: string;
+  score: number;
+  clicks: number;
+}
+
 export default function MemoryGame() {
   const router = useRouter();
 
@@ -28,7 +36,18 @@ export default function MemoryGame() {
   const [timerActive, setTimerActive] = useState(true);
   const [gameFinished, setGameFinished] = useState(false);
 
-  // ⏱️ Temporizador
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+
+  useEffect(() => {
+    loadCards();
+
+    // Cargar usuario desde localStorage
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
   useEffect(() => {
     if (!timerActive) return;
     const timer = setInterval(() => {
@@ -37,7 +56,6 @@ export default function MemoryGame() {
     return () => clearInterval(timer);
   }, [timerActive]);
 
-  // ⬇️ Carga inicial de cartas
   const loadCards = async () => {
     try {
       const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=8');
@@ -76,11 +94,6 @@ export default function MemoryGame() {
     }
   };
 
-  useEffect(() => {
-    loadCards();
-  }, []);
-
-  // 🔁 Gestor del clic a cada targeta
   const handleClick = (cardIndex: number) => {
     if (disableAll || cards[cardIndex].isFlipped || cards[cardIndex].matched || gameFinished) return;
 
@@ -101,16 +114,29 @@ export default function MemoryGame() {
       if (newCards[firstIdx].id === newCards[secondIdx].id) {
         newCards[firstIdx].matched = true;
         newCards[secondIdx].matched = true;
-        setScore(prev => prev + 10); // 🎯 Sumar puntuación
+        setScore(prev => prev + 10);
         setTimeout(() => {
           setCards([...newCards]);
           setFlippedCards([]);
           setDisableAll(false);
-
-          // Comprobar si terminó el juego
           if (newCards.every(card => card.matched)) {
             setGameFinished(true);
-            setTimerActive(false); // Parar temporizador
+            setTimerActive(false);
+
+            if (user) {
+              const gameData: GameResult = {
+                name: user.name,
+                email: user.email,
+                time: formatTime(seconds),
+                score,
+                clicks: totalClicks,
+              };
+
+              const stored = localStorage.getItem('games');
+              const parsed = stored ? JSON.parse(stored) : [];
+              parsed.push(gameData);
+              localStorage.setItem('games', JSON.stringify(parsed));
+            }
           }
         }, 500);
       } else {
@@ -125,7 +151,6 @@ export default function MemoryGame() {
     }
   };
 
-  // 🧮 Formatea el tiempo (mm:ss)
   const formatTime = (totalSeconds: number) => {
     const min = Math.floor(totalSeconds / 60)
       .toString()
@@ -134,7 +159,6 @@ export default function MemoryGame() {
     return `${min}:${sec}`;
   };
 
-  // Animación simple para el mensaje de felicitaciones
   const messageAnimation = {
     animation: 'pulse 1.5s infinite',
   };
@@ -155,7 +179,6 @@ export default function MemoryGame() {
         paddingBottom: '2rem',
       }}
     >
-      {/* Overlay oscuro para legibilidad */}
       <div
         style={{
           position: 'absolute',
@@ -165,12 +188,10 @@ export default function MemoryGame() {
         }}
       />
 
-      {/* Contenido principal */}
       <div
         className="d-flex flex-column align-items-center justify-content-start p-4"
         style={{ position: 'relative', zIndex: 1 }}
       >
-        {/* ⏱️🏆 Encabezado */}
         <div className="mb-4 text-center">
           <h5 className="fw-bold" style={{ color: '#adff2f' }}>
             🖱 Total Clicks: {totalClicks}
@@ -179,78 +200,88 @@ export default function MemoryGame() {
           <h6 style={{ color: '#7fff00' }}>🎯 Puntuació: {score}</h6>
         </div>
 
-        {/* Mensaje de finalización con animación */}
         {gameFinished && (
-          <div
-            className="mb-4 text-center p-4 rounded"
-            style={{
-              backgroundColor: 'rgba(0, 128, 0, 0.7)',
-              color: 'white',
-              fontSize: '1.5rem',
-              fontWeight: '700',
-              maxWidth: '500px',
-              ...messageAnimation,
-            }}
-          >
-            🎉 ¡Felicidades, terminaste el juego! 🎉<br />
-            Tiempo: {formatTime(seconds)} <br />
-            Puntuación: {score}
-          </div>
+          <>
+            <div
+              className="mb-4 text-center p-4 rounded"
+              style={{
+                backgroundColor: 'rgba(0, 128, 0, 0.7)',
+                color: 'white',
+                fontSize: '1.5rem',
+                fontWeight: '700',
+                maxWidth: '500px',
+                ...messageAnimation,
+              }}
+            >
+              🎉 ¡Felicidades, terminaste el juego! 🎉<br />
+              Tiempo: {formatTime(seconds)} <br />
+              Puntuación: {score}
+            </div>
+
+            <div className="d-flex gap-3 mb-4">
+              <button
+                onClick={loadCards}
+                className="btn btn-light fw-bold"
+                style={{ borderRadius: '30px', fontFamily: "'Comfortaa', cursive" }}
+              >
+                🔄 Jugar de nuevo
+              </button>
+              <button
+                onClick={() => router.push('/')}
+                className="btn btn-success fw-bold"
+                style={{ borderRadius: '30px', fontFamily: "'Comfortaa', cursive" }}
+              >
+                🏠 Menú principal
+              </button>
+              <button
+                onClick={() => router.push('/home/partidas')}
+                className="btn btn-info fw-bold"
+                style={{ borderRadius: '30px', fontFamily: "'Comfortaa', cursive" }}
+              >
+                📋 Ver mis partidas
+              </button>
+            </div>
+          </>
         )}
 
-        {/* Botones para reiniciar y volver */}
-        {gameFinished && (
-          <div className="d-flex gap-3 mb-4">
-            <button
-              onClick={loadCards}
-              className="btn btn-light fw-bold"
-              style={{ borderRadius: '30px', fontFamily: "'Comfortaa', cursive" }}
-            >
-              🔄 Reiniciar partida
-            </button>
-            <button
-              onClick={() => router.push('/')}
-              className="btn btn-success fw-bold"
-              style={{ borderRadius: '30px', fontFamily: "'Comfortaa', cursive" }}
-            >
-              🏠 Volver al Home
-            </button>
-          </div>
-        )}
-
-        {/* 🧩 Grid de cartas (más grandes) */}
         <div className="d-flex flex-wrap justify-content-center" style={{ maxWidth: '1200px' }}>
           {cards.map((card, index) => (
             <div
               key={card.uniqueId}
               className="card m-2 text-center shadow"
               style={{
-                width: '8rem', // más grande
+                width: '8rem',
                 height: '10rem',
                 cursor: gameFinished ? 'default' : 'pointer',
-                border: card.matched ? '3px solid limegreen' : '1.5px solid #ccc',
-                backgroundColor: card.matched ? '#e6ffe6' : 'white',
                 userSelect: 'none',
               }}
               onClick={() => handleClick(index)}
             >
-              {card.isFlipped || card.matched ? (
-                <>
-                  <img
-                    src={card.image}
-                    alt={`Pokemon ${card.id}`}
-                    className="card-img-top p-2 bg-light"
-                    style={{ objectFit: 'contain', height: '7.5rem' }}
-                  />
-                  <div className="card-footer p-1">
-                    <small className="text-muted">Clicks: {card.clicks}</small>
+              <div className="card-container w-100 h-100">
+                <div className={`card-inner ${card.isFlipped || card.matched ? 'flipped' : ''}`}>
+                  <div
+                    className="card-front"
+                    style={{
+                      backgroundColor: card.matched ? '#e6ffe6' : 'white',
+                      border: card.matched ? '3px solid limegreen' : '1.5px solid #ccc',
+                    }}
+                  >
+                    <img
+                      src={card.image}
+                      alt={`Pokemon ${card.id}`}
+                      className="card-img-top p-2 bg-light"
+                      style={{ objectFit: 'contain', height: '7.5rem' }}
+                    />
+                    <div className="card-footer p-1">
+                      <small className="text-muted">Clicks: {card.clicks}</small>
+                    </div>
                   </div>
-                </>
-              ) : (
-                <div className="bg-secondary w-100 h-100 d-flex align-items-center justify-content-center rounded">
-                  <span className="text-white display-5">?</span>
+
+                  <div className="card-back">
+                    <span className="text-white display-5">?</span>
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>
@@ -261,6 +292,44 @@ export default function MemoryGame() {
           0% { transform: scale(1); }
           50% { transform: scale(1.05); }
           100% { transform: scale(1); }
+        }
+
+        .card-container {
+          perspective: 1000px;
+          width: 100%;
+          height: 100%;
+        }
+
+        .card-inner {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          transform-style: preserve-3d;
+          transition: transform 1s;
+        }
+
+        .card-inner.flipped {
+          transform: rotateY(180deg);
+        }
+
+        .card-front,
+        .card-back {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          backface-visibility: hidden;
+          border-radius: 0.5rem;
+        }
+
+        .card-front {
+          transform: rotateY(180deg);
+        }
+
+        .card-back {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: #6c757d;
         }
       `}</style>
     </div>
