@@ -52,7 +52,7 @@ export function Header() {
   const handleMouseLeave = () => {
     hoverTimeout.current = setTimeout(() => {
       setHovering(false);
-    }, 300); // Espera 300ms antes de ocultar el dropdown
+    }, 300);
   };
 
   return (
@@ -96,7 +96,10 @@ export function Header() {
                 <Link href="/juego" className="btn btn-outline-light">🎮 Juego</Link>
               </li>
               <li className="nav-item">
-                <Link href="/acerca" className="btn btn-outline-light">ℹ️ Acerca</Link>
+                <Link href="/acerca" className="btn btn-outline-light">🪙 Clasificación</Link>
+              </li>
+              <li className="nav-item">
+                <Link href="/configuracion" className="btn btn-outline-light">⚙️ Configuración</Link>
               </li>
 
               {userEmail ? (
