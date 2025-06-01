@@ -12,24 +12,51 @@ interface GameResult {
   clicks: number;
 }
 
+interface Usuario {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+}
+
 export default function Usuarios() {
   const router = useRouter();
+
   const [games, setGames] = useState<GameResult[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [currentUserPassword, setCurrentUserPassword] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('games');
-    if (stored) {
-      setGames(JSON.parse(stored));
+    // Cargo partidas
+    const storedGames = localStorage.getItem('games');
+    if (storedGames) {
+      setGames(JSON.parse(storedGames));
     }
 
+    // Cargo todos los usuarios
+    const storedUsuarios = localStorage.getItem('usuarios');
+    if (storedUsuarios) {
+      setUsuarios(JSON.parse(storedUsuarios));
+    }
+
+    // Cargo usuario logueado (solo email y name)
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
         const userObj = JSON.parse(storedUser);
         if (userObj?.email) {
           setCurrentUserEmail(userObj.email);
+
+          // Buscar contraseña del usuario actual en la lista de usuarios
+          if (storedUsuarios) {
+            const usuariosArr: Usuario[] = JSON.parse(storedUsuarios);
+            const usuarioActual = usuariosArr.find(u => u.email === userObj.email);
+            if (usuarioActual) {
+              setCurrentUserPassword(usuarioActual.password);
+            }
+          }
         }
       } catch (e) {
         console.error('Error al parsear usuario actual:', e);
@@ -37,7 +64,8 @@ export default function Usuarios() {
     }
   }, []);
 
-  const uniqueUsers = Array.from(new Set(games.map((g) => g.email)));
+  // Lista de emails únicos para mostrar, sacada de los usuarios, no de juegos
+  const uniqueUsers = Array.from(new Set(usuarios.map(u => u.email)));
 
   const deleteUser = (email: string) => {
     if (email !== currentUserEmail) {
@@ -47,18 +75,28 @@ export default function Usuarios() {
 
     const confirmPassword = prompt(`Introduce la contraseña de ${email} para borrar el usuario:`);
 
-    if (confirmPassword && confirmPassword === email) {
-      const updatedGames = games.filter((g) => g.email !== email);
+    if (confirmPassword && confirmPassword === currentUserPassword) {
+      // Eliminar partidas asociadas a ese usuario
+      const updatedGames = games.filter(g => g.email !== email);
       localStorage.setItem('games', JSON.stringify(updatedGames));
       setGames(updatedGames);
+
+      // Eliminar usuario de la lista de usuarios
+      const updatedUsuarios = usuarios.filter(u => u.email !== email);
+      localStorage.setItem('usuarios', JSON.stringify(updatedUsuarios));
+      setUsuarios(updatedUsuarios);
+
       if (selectedUser === email) setSelectedUser(null);
       alert(`Usuario ${email} eliminado.`);
+
+      // Eliminar usuario logueado para simular logout
+      localStorage.removeItem('user');
+      router.push('/login'); // Cambia '/login' si tu ruta es otra
     } else {
       alert('❌ Contraseña incorrecta. No se ha borrado el usuario.');
     }
   };
 
-  // Nuevo: Función para ir a la página MisPartidas del usuario logueado
   const goToMyProfile = () => {
     if (currentUserEmail) {
       router.push('/mispartidas');
@@ -101,12 +139,12 @@ export default function Usuarios() {
 
       <div className="text-center mb-4">
         <button className="btn btn-primary" onClick={goToMyProfile}>
-          🔐 Mis Patidas
+          🔐 Mis Partidas
         </button>
       </div>
 
       <div className="row g-4 justify-content-center">
-        {uniqueUsers.map((email) => (
+        {uniqueUsers.map(email => (
           <div key={email} className="col-sm-6 col-md-4 col-lg-3 position-relative">
             <div
               className={`card text-center h-100 shadow-lg ${email === currentUserEmail ? 'text-bg-light' : 'text-bg-secondary'}`}
@@ -117,7 +155,7 @@ export default function Usuarios() {
                 <button
                   className="btn btn-danger btn-sm position-absolute"
                   style={{ top: '10px', left: '10px', zIndex: 1 }}
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     deleteUser(email);
                   }}
@@ -139,8 +177,6 @@ export default function Usuarios() {
           </div>
         ))}
       </div>
-
-      {/* Opcional: mostrar partidas del usuario seleccionado si quieres, o eliminar esta sección */}
     </div>
   );
 }
