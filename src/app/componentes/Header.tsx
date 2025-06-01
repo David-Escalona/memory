@@ -99,7 +99,7 @@ export function Header() {
                 <Link href="/acerca" className="btn btn-outline-light">🪙 Clasificación</Link>
               </li>
               <li className="nav-item">
-                <Link href="/configuracion" className="btn btn-outline-light">⚙️ Configuración</Link>
+                <Link href="/configuracion" className="btn btn-outline-light">👩‍🎓 Usuarios</Link>
               </li>
 
               {userEmail ? (

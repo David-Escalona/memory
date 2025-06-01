@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 interface GameResult {
@@ -12,25 +13,41 @@ interface GameResult {
 }
 
 export default function Usuarios() {
+  const router = useRouter();
   const [games, setGames] = useState<GameResult[]>([]);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [passwordInput, setPasswordInput] = useState('');
-  const [confirmingUserDelete, setConfirmingUserDelete] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('games');
     if (stored) {
       setGames(JSON.parse(stored));
     }
+
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const userObj = JSON.parse(storedUser);
+        if (userObj?.email) {
+          setCurrentUserEmail(userObj.email);
+        }
+      } catch (e) {
+        console.error('Error al parsear usuario actual:', e);
+      }
+    }
   }, []);
 
   const uniqueUsers = Array.from(new Set(games.map((g) => g.email)));
-  const userGames = selectedUser ? games.filter((g) => g.email === selectedUser) : [];
 
   const deleteUser = (email: string) => {
-    const confirmEmail = prompt(`Introduce la contraseña de ${email} para borrar el usuario:`);
+    if (email !== currentUserEmail) {
+      alert('❌ Solo puedes borrar tu propio usuario.');
+      return;
+    }
 
-    if (confirmEmail && confirmEmail === email) {
+    const confirmPassword = prompt(`Introduce la contraseña de ${email} para borrar el usuario:`);
+
+    if (confirmPassword && confirmPassword === email) {
       const updatedGames = games.filter((g) => g.email !== email);
       localStorage.setItem('games', JSON.stringify(updatedGames));
       setGames(updatedGames);
@@ -41,21 +58,14 @@ export default function Usuarios() {
     }
   };
 
-  const deleteGame = (index: number) => {
-    if (!selectedUser) return;
-    const userGameList = games.filter((g) => g.email === selectedUser);
-    userGameList.splice(index, 1);
-    const updatedAll = games.filter((g) => g.email !== selectedUser).concat(userGameList);
-    localStorage.setItem('games', JSON.stringify(updatedAll));
-    setGames(updatedAll);
+  // Nuevo: Función para ir a la página MisPartidas del usuario logueado
+  const goToMyProfile = () => {
+    if (currentUserEmail) {
+      router.push('/mispartidas');
+    } else {
+      alert('⚠️ Debes estar logueado para ver tu perfil.');
+    }
   };
-
-  const playAgain = (game: GameResult) => {
-    localStorage.setItem('replay', JSON.stringify(game));
-    window.location.href = '/jugar'; // Asegúrate de tener esta ruta
-  };
-
-  const sortByScore = [...userGames].sort((a, b) => b.score - a.score);
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', padding: '2rem', fontFamily: "'Comfortaa', cursive" }}>
@@ -89,25 +99,32 @@ export default function Usuarios() {
 
       <h2 className="text-center text-white mb-4">👥 Jugadores</h2>
 
+      <div className="text-center mb-4">
+        <button className="btn btn-primary" onClick={goToMyProfile}>
+          🔐 Mis Patidas
+        </button>
+      </div>
+
       <div className="row g-4 justify-content-center">
         {uniqueUsers.map((email) => (
           <div key={email} className="col-sm-6 col-md-4 col-lg-3 position-relative">
             <div
-              className="card text-center text-bg-light h-100 shadow-lg"
+              className={`card text-center h-100 shadow-lg ${email === currentUserEmail ? 'text-bg-light' : 'text-bg-secondary'}`}
               onClick={() => setSelectedUser(email)}
               style={{ cursor: 'pointer', borderRadius: '1rem' }}
             >
-              {/* Borrar icono */}
-              <button
-                className="btn btn-danger btn-sm position-absolute"
-                style={{ top: '10px', left: '10px', zIndex: 1 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteUser(email);
-                }}
-              >
-                🗑
-              </button>
+              {email === currentUserEmail && (
+                <button
+                  className="btn btn-danger btn-sm position-absolute"
+                  style={{ top: '10px', left: '10px', zIndex: 1 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteUser(email);
+                  }}
+                >
+                  🗑
+                </button>
+              )}
 
               <img
                 src="https://th.bing.com/th/id/OIP.dzZlz7vwvzOBO1J1lJ4WzQHaHa?rs=1&pid=ImgDetMain"
@@ -123,38 +140,7 @@ export default function Usuarios() {
         ))}
       </div>
 
-      {selectedUser && (
-        <div className="mt-5">
-          <h3 className="text-white text-center mb-4">🏆 Clasificación de {selectedUser}</h3>
-          <div className="row g-4 justify-content-center">
-            {sortByScore.map((game, idx) => (
-              <div key={idx} className="col-sm-6 col-md-4 col-lg-3">
-                <div className="card h-100 shadow-sm text-bg-secondary position-relative" style={{ borderRadius: '1rem' }}>
-                  <div className="card-body">
-                    <h5 className="card-title">Tiempo: {game.time}</h5>
-                    <p className="card-text mb-1">Puntuación: {game.score}</p>
-                    <p className="card-text">Clicks: {game.clicks}</p>
-                    <div className="d-flex justify-content-between mt-3">
-                      <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => deleteGame(idx)}
-                      >
-                        🗑 Eliminar
-                      </button>
-                      <button
-                        className="btn btn-sm btn-warning"
-                        onClick={() => playAgain(game)}
-                      >
-                        🔁 Reintentar
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Opcional: mostrar partidas del usuario seleccionado si quieres, o eliminar esta sección */}
     </div>
   );
 }
