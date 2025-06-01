@@ -7,149 +7,173 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 interface GameResult {
   name: string;
   email: string;
-  time: string; // formato "MM:SS"
+  time: string; // Asumimos formato "mm:ss" o similar
   score: number;
   clicks: number;
 }
 
-type SortField = 'time' | 'score' | 'clicks' | 'email';
-type SortOrder = 'asc' | 'desc';
+type SortKey = 'time' | 'score' | 'clicks' | null;
+type SortDirection = 'asc' | 'desc';
 
 export default function MisPartidas() {
+  const router = useRouter();
   const [games, setGames] = useState<GameResult[]>([]);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<SortField>('time');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-  const router = useRouter();
+
+  const [sortKey, setSortKey] = useState<SortKey>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (!userStr) {
-      alert('⚠️ Debes iniciar sesión para ver tus partidas.');
-      router.push('/login');
-      return;
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const userObj = JSON.parse(storedUser);
+        if (userObj?.email) {
+          setUserEmail(userObj.email);
+        }
+      } catch (e) {
+        console.error('Error al leer el usuario:', e);
+      }
     }
 
-    const user = JSON.parse(userStr);
-    setUserEmail(user.email);
-
-    const stored = localStorage.getItem('games');
-    if (stored) {
-      const allGames: GameResult[] = JSON.parse(stored);
-      const userGames = allGames.filter((g) => g.email === user.email);
-      setGames(userGames);
+    const storedGames = localStorage.getItem('games');
+    if (storedGames) {
+      setGames(JSON.parse(storedGames));
     }
-  }, [router]);
+  }, []);
 
-  const sortGames = (gamesToSort: GameResult[], field: SortField, order: SortOrder): GameResult[] => {
-    return [...gamesToSort].sort((a, b) => {
-      let valA: number | string = a[field];
-      let valB: number | string = b[field];
+  const parseTimeToSeconds = (time: string) => {
+    // Asumiendo formato mm:ss o hh:mm:ss
+    const parts = time.split(':').map(Number);
+    if (parts.length === 2) {
+      return parts[0] * 60 + parts[1];
+    } else if (parts.length === 3) {
+      return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    }
+    return 0;
+  };
 
-      if (field === 'time') {
-        const toSeconds = (time: string) => {
-          const [min, sec] = time.split(':').map(Number);
-          return min * 60 + sec;
-        };
-        valA = toSeconds(a.time);
-        valB = toSeconds(b.time);
+  const sortedGames = () => {
+    const userGames = games.filter((game) => game.email === userEmail);
+    if (!sortKey) return userGames;
+
+    return [...userGames].sort((a, b) => {
+      let aVal: number | string = '';
+      let bVal: number | string = '';
+
+      switch (sortKey) {
+        case 'time':
+          aVal = parseTimeToSeconds(a.time);
+          bVal = parseTimeToSeconds(b.time);
+          break;
+        case 'score':
+          aVal = a.score;
+          bVal = b.score;
+          break;
+        case 'clicks':
+          aVal = a.clicks;
+          bVal = b.clicks;
+          break;
       }
 
-      if (typeof valA === 'string' && typeof valB === 'string') {
-        return order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-      } else {
-        return order === 'asc' ? Number(valA) - Number(valB) : Number(valB) - Number(valA);
-      }
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
     });
   };
 
-  const handleSort = (field: SortField) => {
-    if (field === sortField) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      // Cambiar dirección
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      setSortField(field);
-      setSortOrder('asc');
+      setSortKey(key);
+      setSortDirection('asc');
     }
   };
 
-  const handleDelete = (index: number) => {
-    if (!userEmail) return;
+  const handleDeleteGame = (index: number) => {
+    // Solo eliminamos la partida correspondiente al usuario y la posición
+    const userGames = games.filter(game => game.email === userEmail);
+    const gameToDelete = userGames[index];
 
-    const allGames = JSON.parse(localStorage.getItem('games') || '[]');
-    const userGames = allGames.filter((g: GameResult) => g.email === userEmail);
-    userGames.splice(index, 1);
-
-    const remainingGames = allGames.filter((g: GameResult) => g.email !== userEmail);
-    const updatedAllGames = [...remainingGames, ...userGames];
-
-    localStorage.setItem('games', JSON.stringify(updatedAllGames));
-    setGames(userGames);
+    const updatedGames = games.filter(game => game !== gameToDelete);
+    setGames(updatedGames);
+    localStorage.setItem('games', JSON.stringify(updatedGames));
   };
 
-  const sortedGames = sortGames(games, sortField, sortOrder);
-
-  const renderSortIcon = (field: SortField) => {
-    if (field !== sortField) return '↕️';
-    return sortOrder === 'asc' ? '⬆️' : '⬇️';
+  const handleEditGame = (game: GameResult) => {
+    localStorage.setItem('gameToReplay', JSON.stringify(game));
+    router.push('/juego');
   };
+
+  const displayedGames = sortedGames();
 
   return (
-    <div className="container mt-5">
-      <h2 className="text-center mb-3">📜 Mis Partidas</h2>
+    <div className="container mt-5" style={{ fontFamily: "'Comfortaa', cursive" }}>
+      <h2 className="text-center mb-4">
+        📜 Mis Partidas {userEmail && `(${userEmail})`}
+      </h2>
 
-      {sortedGames.length === 0 ? (
-        <p className="text-center">No tienes partidas guardadas aún.</p>
+      {displayedGames.length === 0 ? (
+        <p className="text-center">No tienes partidas guardadas.</p>
       ) : (
-        <table className="table table-hover table-bordered text-center shadow">
-          <thead className="table-dark">
-            <tr>
-              <th
-                onClick={() => handleSort('email')}
-                style={{ cursor: 'pointer', color: sortField === 'email' ? '#A7FF00' : undefined }}
-              >
-                Email {renderSortIcon('email')}
-              </th>
-              <th
-                onClick={() => handleSort('time')}
-                style={{ cursor: 'pointer', color: sortField === 'time' ? '#A7FF00' : undefined }}
-              >
-                Tiempo {renderSortIcon('time')}
-              </th>
-              <th
-                onClick={() => handleSort('score')}
-                style={{ cursor: 'pointer', color: sortField === 'score' ? '#A7FF00' : undefined }}
-              >
-                Puntuación {renderSortIcon('score')}
-              </th>
-              <th
-                onClick={() => handleSort('clicks')}
-                style={{ cursor: 'pointer', color: sortField === 'clicks' ? '#A7FF00' : undefined }}
-              >
-                Clicks {renderSortIcon('clicks')}
-              </th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedGames.map((game, index) => (
-              <tr key={index}>
-                <td>{game.email}</td>
-                <td>{game.time}</td>
-                <td>{game.score}</td>
-                <td>{game.clicks}</td>
-                <td>
-                  <button
-                    className="btn btn-sm btn-danger"
-                    onClick={() => handleDelete(index)}
-                  >
-                    🗑️ Borrar
-                  </button>
-                </td>
+        <div className="table-responsive">
+          <table className="table table-striped table-hover table-bordered align-middle text-center">
+            <thead className="table-dark">
+              <tr>
+                <th>#</th>
+                <th
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => handleSort('time')}
+                >
+                  ⏱ Tiempo {sortKey === 'time' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
+                </th>
+                <th
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => handleSort('score')}
+                >
+                  🏆 Puntuación {sortKey === 'score' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
+                </th>
+                <th
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => handleSort('clicks')}
+                >
+                  🖱️ Clicks {sortKey === 'clicks' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}
+                </th>
+                <th>Acciones</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {displayedGames.map((game, idx) => (
+                <tr key={idx}>
+                  <td>{idx + 1}</td>
+                  <td>{game.time}</td>
+                  <td>{game.score}</td>
+                  <td>{game.clicks}</td>
+                  <td>
+                    <div className="d-flex gap-2 justify-content-center">
+                      <button
+                        className="btn btn-sm btn-warning"
+                        onClick={() => handleEditGame(game)}
+                      >
+                        📝 Modificar
+                      </button>
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleDeleteGame(idx)}
+                      >
+                        🗑️ Eliminar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
 }
+

@@ -234,7 +234,7 @@ export default function MemoryGame() {
                 🏠 Menú principal
               </button>
               <button
-                onClick={() => router.push('/home/partidas')}
+                onClick={() => router.push('/mispartidas')}
                 className="btn btn-info fw-bold"
                 style={{ borderRadius: '30px', fontFamily: "'Comfortaa', cursive" }}
               >

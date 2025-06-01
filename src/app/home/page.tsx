@@ -14,7 +14,9 @@ export default function Home() {
       if (storedUser) {
         try {
           const userObj = JSON.parse(storedUser);
-          setUserName(userObj.name || userObj.email); // Usa el nombre si existe, si no el email
+          if (userObj?.email) {
+            setUserName(userObj.name || userObj.email); // Usa el nombre si existe, si no el email
+          }
         } catch (e) {
           console.error('Error al parsear usuario:', e);
         }
@@ -23,13 +25,24 @@ export default function Home() {
   }, []);
 
   const handleMisPartidasClick = () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) {
       alert('⚠️ Debes iniciar sesión para ver tus partidas.');
       router.push('/login');
       return;
     }
-    router.push('/mispartidas');
+
+    try {
+      const userObj = JSON.parse(storedUser);
+      if (userObj?.email) {
+        router.push('/mispartidas');
+      } else {
+        throw new Error('Usuario inválido');
+      }
+    } catch {
+      alert('⚠️ Usuario inválido. Vuelve a iniciar sesión.');
+      router.push('/login');
+    }
   };
 
   return (
